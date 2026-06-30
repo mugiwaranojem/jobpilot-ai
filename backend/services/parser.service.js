@@ -1,29 +1,59 @@
-// services/parser.service.js
-
 import * as cheerio from "cheerio";
 
-export function parseJobs(html) {
+const SEEK_BASE_URL = "https://www.seek.com.au";
 
+export function parseJobs(html) {
     const $ = cheerio.load(html);
 
     const jobs = [];
 
-    $("article").each((i, el) => {
+    $('div[data-automation="search-result-job-list"] article').each((_, article) => {
+
+        const anchor = $(article)
+            .find('a[data-automation="job-list-view-job-link"]')
+            .first();
+
+        const title = $(article)
+            .find("h3")
+            .first()
+            .text()
+            .trim();
+
+        if (!title || !anchor.length) {
+            return;
+        }
 
         jobs.push({
+            title,
+            company: $(article)
+                .find('[data-automation="jobCompany"]')
+                .text()
+                .trim(),
 
-            title: $(el).find("a").first().text().trim(),
+            location: $(article)
+                .find('[data-automation="jobLocation"]')
+                .text()
+                .trim(),
 
-            company: $(el).find("[data-automation='jobCompany']").text(),
+            salary: $(article)
+                .find('[data-automation="jobSalary"]')
+                .text()
+                .trim(),
 
-            location: $(el).find("[data-automation='jobLocation']").text(),
+            workType: $(article)
+                .find('[data-automation="jobWorkType"]')
+                .text()
+                .trim(),
 
-            link: "https://seek.com" + $(el).find("a").attr("href")
+            listedAt: $(article)
+                .find("time")
+                .text()
+                .trim(),
 
+            link: new URL(anchor.attr("href"), SEEK_BASE_URL).href
         });
 
     });
 
     return jobs;
-
 }
